@@ -3,55 +3,8 @@ import axios from 'axios';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { FaSearch, FaPlus, FaTrash } from 'react-icons/fa'; 
-import arrozImage from '../../assets/images/arroz.webp';
-import frijolesImage from '../../assets/images/frijoles.webp';
-import aceiteImage from '../../assets/images/aceite.png';
+import { productsData } from './Data/data';
 
-const productsData = [
-  {
-    id: 1,
-    code_reference: "12345",
-    name: "Arroz",
-    price: 2500,
-    tax_rate: "19.00",
-    discount_rate: 10,
-    unit_measure_id: 70,
-    standard_code_id: 1,
-    is_excluded: 0,
-    tribute_id: 1,
-    withholding_taxes: [{ code: "06", withholding_tax_rate: "7.00" }],
-    image: arrozImage,
-  },
-  {
-    id: 2,
-    code_reference: "54321",
-    name: "Frijoles",
-    price: 3000,
-    tax_rate: "5.00",
-    discount_rate: 0,
-    unit_measure_id: 70,
-    standard_code_id: 1,
-    is_excluded: 0,
-    tribute_id: 1,
-    withholding_taxes: [],
-    image: frijolesImage,
-  },
-  {
-    id: 3,
-    code_reference: "67890",
-    name: "Aceite",
-    price: 8000,
-    tax_rate: "19.00",
-    discount_rate: 5,
-    unit_measure_id: 70,
-    standard_code_id: 1,
-    is_excluded: 0,
-    tribute_id: 1,
-    withholding_taxes: [{ code: "05", withholding_tax_rate: "15.00" }],
-    image: aceiteImage,
-  },
-  // ... (puedes agregar más productos aquí)
-];
 
 function InvoiceForm() {
   const [products, setProducts] = useState(productsData);
@@ -71,7 +24,6 @@ function InvoiceForm() {
     identification_document_id: "3",
     municipality_id: "427",
   });
-  const [invoicePublicUrl, setInvoicePublicUrl] = useState<string | null>(null);
   const [municipalities, setMunicipalities] = useState<{ id: number; name: string; department: string }[]>([]);
   const apiUrl = import.meta.env.VITE_URL_API;
   const token = import.meta.env.VITE_TOKEN;
@@ -150,7 +102,7 @@ function InvoiceForm() {
   const generateInvoice = () => {
     const invoice = {
       numbering_range_id: 8,
-      reference_code: "elezdev-002",
+      reference_code: "elezdev-003",
       observation: "",
       payment_form: "1",
       payment_due_date: "2024-12-30",
