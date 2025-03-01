@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-
-// Importar imágenes desde la carpeta assets
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+import { FaSearch, FaPlus, FaTrash } from 'react-icons/fa'; 
 import arrozImage from '../../assets/images/arroz.webp';
 import frijolesImage from '../../assets/images/frijoles.webp';
 import aceiteImage from '../../assets/images/aceite.png';
@@ -18,10 +19,8 @@ const productsData = [
     standard_code_id: 1,
     is_excluded: 0,
     tribute_id: 1,
-    withholding_taxes: [
-      { code: "06", withholding_tax_rate: "7.00" }
-    ],
-    image: arrozImage // Usar la imagen importada
+    withholding_taxes: [{ code: "06", withholding_tax_rate: "7.00" }],
+    image: arrozImage,
   },
   {
     id: 2,
@@ -35,7 +34,7 @@ const productsData = [
     is_excluded: 0,
     tribute_id: 1,
     withholding_taxes: [],
-    image: frijolesImage // Usar la imagen importada
+    image: frijolesImage,
   },
   {
     id: 3,
@@ -48,35 +47,35 @@ const productsData = [
     standard_code_id: 1,
     is_excluded: 0,
     tribute_id: 1,
-    withholding_taxes: [
-      { code: "05", withholding_tax_rate: "15.00" }
-    ],
-    image: aceiteImage // Usar la imagen importada
-  }
+    withholding_taxes: [{ code: "05", withholding_tax_rate: "15.00" }],
+    image: aceiteImage,
+  },
+  // ... (puedes agregar más productos aquí)
 ];
 
 function InvoiceForm() {
   const [products, setProducts] = useState(productsData);
-  const [selectedProducts, setSelectedProducts] = useState([]);
-  const apiUrl = import.meta.env.VITE_URL_API;
-  const token = import.meta.env.VITE_TOKEN;
+  const [selectedProducts, setSelectedProducts] = useState<any[]>([]);
+  const [searchTerm, setSearchTerm] = useState('');
   const [customer, setCustomer] = useState({
-    identification: "10029238873",
+    identification: "",
     dv: "3",
     company: "elezdev",
     trade_name: "",
-    names: "Edwin",
-    address: "N/A",
-    email: "elezdev2023@gmail.com",
-    phone: "1234567890",
+    names: "",
+    address: "",
+    email: "",
+    phone: "",
     legal_organization_id: "2",
     tribute_id: "21",
     identification_document_id: "3",
-    municipality_id: "427"
+    municipality_id: "427",
   });
+  const [invoicePublicUrl, setInvoicePublicUrl] = useState<string | null>(null);
+  const [municipalities, setMunicipalities] = useState<{ id: number; name: string; department: string }[]>([]);
+  const apiUrl = import.meta.env.VITE_URL_API;
+  const token = import.meta.env.VITE_TOKEN;
 
-  const [municipalities, setMunicipalities] = useState([]);
-  const [searchTerm, setSearchTerm] = useState('');
   useEffect(() => {
     fetchMunicipalities();
   }, []);
@@ -85,48 +84,59 @@ function InvoiceForm() {
     try {
       const response = await axios.get(`${apiUrl}/v1/municipalities?name=${name}`, {
         headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
       });
-      setMunicipalities(response.data.data); 
+      setMunicipalities(response.data.data);
     } catch (error) {
       console.error('Error fetching municipalities:', error);
+      toast.error('Error al cargar los municipios');
     }
   };
 
-  const filteredMunicipalities = searchTerm
-    ? municipalities.filter(municipality =>
-        municipality.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        municipality.department.toLowerCase().includes(searchTerm.toLowerCase())
-    )
-    : municipalities;
-    
-  const handleMunicipalityChange = (e) => {
-    const { value } = e.target;
-    setCustomer({ ...customer, municipality_id: value });
-  };
+  const filteredProducts = searchTerm
+    ? products.filter((product) =>
+        product.name.toLowerCase().includes(searchTerm.toLowerCase())
+      )
+    : products;
 
-  const addProductToInvoice = (product) => {
-    const existingProduct = selectedProducts.find(p => p.id === product.id);
+  const filteredMunicipalities = searchTerm
+    ? municipalities.filter(
+        (municipality) =>
+          municipality.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          municipality.department.toLowerCase().includes(searchTerm.toLowerCase())
+      )
+    : municipalities;
+
+  const addProductToInvoice = (product:any) => {
+    const existingProduct = selectedProducts.find((p) => p.id === product.id);
     if (existingProduct) {
-      setSelectedProducts(selectedProducts.map(p =>
-        p.id === product.id ? { ...p, quantity: p.quantity + 1 } : p
-      ));
+      setSelectedProducts(
+        selectedProducts.map((p) =>
+          p.id === product.id ? { ...p, quantity: p.quantity + 1 } : p
+        )
+      );
     } else {
       setSelectedProducts([...selectedProducts, { ...product, quantity: 1 }]);
     }
+    toast.success(`${product.name} agregado a la factura`);
   };
 
-  const removeProductFromInvoice = (productId) => {
-    setSelectedProducts(selectedProducts.filter(p => p.id !== productId));
+  const removeProductFromInvoice = (productId:any) => {
+    setSelectedProducts(selectedProducts.filter((p) => p.id !== productId));
+    toast.info('Producto eliminado de la factura');
   };
 
-  const updateProductQuantity = (productId, quantity) => {
+  
+
+  const updateProductQuantity = (productId: number, quantity: number) => {
     if (quantity <= 0) return;
-    setSelectedProducts(selectedProducts.map(p =>
-      p.id === productId ? { ...p, quantity: quantity } : p
-    ));
+    setSelectedProducts(
+      selectedProducts.map((p) =>
+        p.id === productId ? { ...p, quantity: quantity } : p
+      )
+    );
   };
 
   const calculateTotal = () => {
@@ -140,7 +150,7 @@ function InvoiceForm() {
   const generateInvoice = () => {
     const invoice = {
       numbering_range_id: 8,
-      reference_code: "elezdev-001",
+      reference_code: "elezdev-002",
       observation: "",
       payment_form: "1",
       payment_due_date: "2024-12-30",
@@ -149,10 +159,10 @@ function InvoiceForm() {
         start_date: "2024-01-10",
         start_time: "00:00:00",
         end_date: "2024-02-09",
-        end_time: "23:59:59"
+        end_time: "23:59:59",
       },
       customer: customer,
-      items: selectedProducts.map(product => ({
+      items: selectedProducts.map((product) => ({
         code_reference: product.code_reference,
         name: product.name,
         quantity: product.quantity,
@@ -163,56 +173,75 @@ function InvoiceForm() {
         standard_code_id: product.standard_code_id,
         is_excluded: product.is_excluded,
         tribute_id: product.tribute_id,
-        withholding_taxes: product.withholding_taxes
-      }))
+        withholding_taxes: product.withholding_taxes,
+      })),
     };
     console.log(invoice);
     validateInvoice(invoice);
   };
 
-  const validateInvoice = async (invoice) => {
+  const validateInvoice = async (invoice:any) => {
     try {
       const response = await axios.post(`${apiUrl}/v1/bills/validate`, invoice, {
         headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
       });
       console.log('Respuesta del servidor:', response.data);
-      alert('Factura validada correctamente');
+      toast.success('Factura validada correctamente');
     } catch (error) {
       console.error('Error validando la factura:', error);
-      alert('Error validando la factura');
+      toast.error('Error validando la factura');
     }
   };
 
-  const handleCustomerChange = (e) => {
+  const handleCustomerChange = (e:any) => {
     const { name, value } = e.target;
     setCustomer({ ...customer, [name]: value });
   };
 
+  const handleMunicipalityChange = (e:any) => {
+    const { value } = e.target;
+    setCustomer({ ...customer, municipality_id: value });
+  };
+
   return (
     <div className="p-4">
-      <h1 className="mb-4 text-2xl font-bold">Sistema POS</h1>
-      <div className="grid grid-cols-2 gap-4">
+      <ToastContainer />
+      <h1 className="mb-4 text-2xl font-bold text-center text-gray-800">Sistema POS</h1>
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         {/* Sección de Productos */}
-        <div className="p-4 bg-gray-100 rounded-lg">
-          <h2 className="mb-4 text-xl font-semibold">Productos Disponibles</h2>
-          <div className="grid grid-cols-2 gap-4">
-            {products.map(product => (
-              <div key={product.id} className="p-4 bg-white rounded-lg shadow-md">
+        <div className="p-4 rounded-lg shadow-sm bg-gray-50">
+          <h2 className="mb-4 text-xl font-semibold text-gray-700">Productos Disponibles</h2>
+          <div className="relative mb-4">
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder="Buscar productos..."
+              className="w-full p-2 pl-10 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+            <FaSearch className="absolute text-gray-400 top-3 left-3" />
+          </div>
+          <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
+            {filteredProducts.map((product) => (
+              <div
+                key={product.id}
+                className="p-2 transition-shadow bg-white rounded-lg shadow-md hover:shadow-lg"
+              >
                 <img
-                  src={product.image} // Usar la imagen importada
+                  src={product.image}
                   alt={product.name}
-                  className="object-cover w-full h-32 mb-2 rounded-lg"
+                  className="object-cover w-full h-24 mb-2 rounded-lg"
                 />
-                <h3 className="font-bold">{product.name}</h3>
-                <p>Precio: ${product.price}</p>
+                <h3 className="text-sm font-bold text-gray-800">{product.name}</h3>
+                <p className="text-xs text-gray-600">Precio: ${product.price}</p>
                 <button
                   onClick={() => addProductToInvoice(product)}
-                  className="px-4 py-2 mt-2 text-white bg-blue-500 rounded-lg hover:bg-blue-600"
+                  className="flex items-center justify-center w-full px-2 py-1 mt-2 text-sm text-white transition-colors bg-blue-500 rounded-lg hover:bg-blue-600"
                 >
-                  Agregar
+                  <FaPlus className="mr-1" /> Agregar
                 </button>
               </div>
             ))}
@@ -220,19 +249,19 @@ function InvoiceForm() {
         </div>
 
         {/* Sección de Factura y Datos del Cliente */}
-        <div className="p-4 bg-gray-100 rounded-lg">
-          <h2 className="mb-4 text-xl font-semibold">Factura</h2>
+        <div className="p-4 rounded-lg shadow-sm bg-gray-50">
+          <h2 className="mb-4 text-xl font-semibold text-gray-700">Factura</h2>
           <div className="p-4 bg-white rounded-lg shadow-md">
             {/* Formulario del Cliente */}
             <div className="mb-4">
-              <h3 className="mb-2 font-bold">Datos del Cliente</h3>
+              <h3 className="mb-2 font-bold text-gray-800">Datos del Cliente</h3>
               <input
                 type="text"
                 name="names"
                 value={customer.names}
                 onChange={handleCustomerChange}
                 placeholder="Nombre"
-                className="w-full p-2 mb-2 border rounded-lg"
+                className="w-full p-2 mb-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
               <input
                 type="text"
@@ -240,7 +269,7 @@ function InvoiceForm() {
                 value={customer.identification}
                 onChange={handleCustomerChange}
                 placeholder="Identificación"
-                className="w-full p-2 mb-2 border rounded-lg"
+                className="w-full p-2 mb-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
               <input
                 type="text"
@@ -248,7 +277,7 @@ function InvoiceForm() {
                 value={customer.email}
                 onChange={handleCustomerChange}
                 placeholder="Email"
-                className="w-full p-2 mb-2 border rounded-lg"
+                className="w-full p-2 mb-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
               <input
                 type="text"
@@ -256,23 +285,23 @@ function InvoiceForm() {
                 value={customer.phone}
                 onChange={handleCustomerChange}
                 placeholder="Teléfono"
-                className="w-full p-2 mb-2 border rounded-lg"
+                className="w-full p-2 mb-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
-              <input
+              {/* <input
                 type="text"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 placeholder="Buscar municipio (opcional)"
-                className="w-full p-2 mb-2 border rounded-lg"
-              />
+                className="w-full p-2 mb-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              /> */}
               <select
                 name="municipality_id"
                 value={customer.municipality_id}
                 onChange={handleMunicipalityChange}
-                className="w-full p-2 mb-2 border rounded-lg"
+                className="w-full p-2 mb-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="">Seleccione un municipio</option>
-                {filteredMunicipalities.map(municipality => (
+                {filteredMunicipalities.map((municipality) => (
                   <option key={municipality.id} value={municipality.id}>
                     {municipality.name} - {municipality.department}
                   </option>
@@ -282,7 +311,7 @@ function InvoiceForm() {
 
             {/* Tabla de Productos Seleccionados */}
             <div className="mb-4">
-              <h3 className="mb-2 font-bold">Productos Seleccionados</h3>
+              <h3 className="mb-2 font-bold text-gray-800">Productos Seleccionados</h3>
               <table className="w-full border-collapse">
                 <thead>
                   <tr className="bg-gray-200">
@@ -303,7 +332,7 @@ function InvoiceForm() {
                           type="number"
                           value={product.quantity}
                           onChange={(e) => updateProductQuantity(product.id, parseInt(e.target.value))}
-                          className="w-16 p-1 border rounded-lg"
+                          className="w-16 p-1 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                         />
                       </td>
                       <td className="p-2 border">${product.price}</td>
@@ -312,9 +341,9 @@ function InvoiceForm() {
                       <td className="p-2 border">
                         <button
                           onClick={() => removeProductFromInvoice(product.id)}
-                          className="px-2 py-1 text-white bg-red-500 rounded-lg hover:bg-red-600"
+                          className="flex items-center justify-center px-2 py-1 text-white transition-colors bg-red-500 rounded-lg hover:bg-red-600"
                         >
-                          Eliminar
+                          <FaTrash className="mr-1" /> Eliminar
                         </button>
                       </td>
                     </tr>
@@ -325,10 +354,10 @@ function InvoiceForm() {
 
             {/* Total y Botón de Generar Factura */}
             <div className="mt-4">
-              <p className="font-bold">Total: ${calculateTotal().toFixed(2)}</p>
+              <p className="font-bold text-gray-800">Total: ${calculateTotal().toFixed(2)}</p>
               <button
                 onClick={generateInvoice}
-                className="px-4 py-2 mt-2 text-white bg-green-500 rounded-lg hover:bg-green-600"
+                className="w-full px-4 py-2 mt-2 text-white transition-colors bg-green-500 rounded-lg hover:bg-green-600"
               >
                 Generar Factura
               </button>

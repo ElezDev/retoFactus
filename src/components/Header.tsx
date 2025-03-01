@@ -14,9 +14,9 @@ function Header() {
             <li>
               <Link to="/invoice" className="hover:text-green-200">Facturas</Link>
             </li>
-            <li>
+            {/* <li>
               <Link to="/about" className="hover:text-green-200">Acerca de</Link>
-            </li>
+            </li> */}
           </ul>
         </nav>
       </div>

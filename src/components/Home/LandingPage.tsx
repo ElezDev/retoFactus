@@ -47,7 +47,7 @@ function LandingPage() {
             </div>
             <div className="p-6 bg-white rounded-lg shadow-lg">
               <img
-                src="https://via.placeholder.com/500x300" // Reemplaza con una captura de tu app
+                src="/src/assets/images/factus.png" // Reemplaza con una captura de tu app
                 alt="Captura de la aplicación"
                 className="rounded-lg"
               />
