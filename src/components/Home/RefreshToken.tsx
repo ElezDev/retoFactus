@@ -1,26 +1,44 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useToken } from '../../tokenContext';
-import api from '../../Services/Interceptors';
+import { login, refreshToken } from '../../Services/authService'; // Importa la función login
 import { FaSyncAlt } from 'react-icons/fa';
+import { useNavigate } from 'react-router-dom';
 
 const RefreshTokenPage = () => {
     const [loading, setLoading] = useState(false);
-    const { updateToken } = useToken();
+    const [error, setError] = useState<string | null>(null);
+    const { token, updateToken } = useToken(); // Obtén el token del contexto
+    const navigate = useNavigate();
 
-    const handleRefreshToken = async () => {
+    // Función para manejar el inicio de sesión o refresco del token
+    const handleAuthentication = async () => {
         setLoading(true);
+        setError(null);
+
         try {
-            const response = await api.post('/oauth/token', {
-                grant_type: 'password',
-                client_id: import.meta.env.VITE_CLIENT_ID,
-                client_secret: import.meta.env.VITE_CLIENT_SECRET,
-                username: import.meta.env.VITE_EMAIL,
-                password: import.meta.env.VITE_PASSWORD,
-            });
-            updateToken(response.data.access_token);
-            window.location.href = '/';
+            let data;
+            if (!token) {
+                // Si no hay token, inicia sesión
+                data = await login();
+            } else {
+                // Si hay token, intenta refrescarlo
+                data = await refreshToken();
+            }
+
+            // Actualiza el token en el contexto y en localStorage
+            updateToken(data.access_token);
+            localStorage.setItem('token', data.access_token);
+            localStorage.setItem('refresh_token', data.refresh_token);
+
+            // Redirige al usuario a la página principal
+            navigate('/');
         } catch (error) {
-            console.error('Error refreshing token:', error);
+            setError(
+                token
+                    ? 'No se pudo refrescar la sesión. Por favor, inicia sesión nuevamente.'
+                    : 'No se pudo iniciar sesión. Verifica tus credenciales.'
+            );
+            console.error('Error during authentication:', error);
         } finally {
             setLoading(false);
         }
@@ -29,11 +47,19 @@ const RefreshTokenPage = () => {
     return (
         <div className="flex items-center justify-center min-h-screen bg-gray-100">
             <div className="w-full max-w-md p-8 text-center bg-white rounded-lg shadow-lg">
-                <h1 className="mb-4 text-2xl font-bold text-gray-800">Tu sesión ha expirado</h1>
-                <p className="mb-6 text-gray-600">Para continuar, refresca tu sesión.</p>
-                
+                <h1 className="mb-4 text-2xl font-bold text-gray-800">
+                    {token ? 'Tu sesión ha expirado' : 'Inicia sesión'}
+                </h1>
+                <p className="mb-6 text-gray-600">
+                    {token
+                        ? 'Para continuar, refresca tu sesión.'
+                        : 'Para continuar, inicia sesión.'}
+                </p>
+
+                {error && <p className="mb-4 text-sm text-red-500">{error}</p>}
+
                 <button
-                    onClick={handleRefreshToken}
+                    onClick={handleAuthentication}
                     disabled={loading}
                     className={`w-full flex items-center justify-center gap-2 py-2 px-4 text-white font-semibold rounded-lg ${
                         loading ? 'bg-gray-400 cursor-not-allowed' : 'bg-green-600 hover:bg-green-700'
@@ -42,12 +68,12 @@ const RefreshTokenPage = () => {
                     {loading ? (
                         <>
                             <FaSyncAlt className="animate-spin" />
-                            Refrescando...
+                            {token ? 'Refrescando...' : 'Iniciando sesión...'}
                         </>
                     ) : (
                         <>
                             <FaSyncAlt />
-                            Refrescar Token
+                            {token ? 'Refrescar Token' : 'Iniciar Sesión'}
                         </>
                     )}
                 </button>
