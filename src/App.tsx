@@ -16,7 +16,7 @@ function App() {
                     <Header />
                     <main className="flex-grow">
                         <Routes>
-                            <Route path="/" element={<LandingPage />} />
+                            <Route path="retoFactus" element={<LandingPage />} />
                             <Route path="/home" element={<HomePage />} />
                             <Route path="/invoice" element={<InvoicePage />} />
                             <Route path="/about" element={<AboutPage />} />
