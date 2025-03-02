@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { useTable, usePagination, useFilters } from "react-table";
+import { useTable, usePagination, useGlobalFilter } from "react-table";
 import { FaEye, FaQrcode } from "react-icons/fa";
 import { fetchInvoices } from "../../Services/api";
 import Loader from "../utils/Loader";
@@ -7,17 +7,16 @@ import Loader from "../utils/Loader";
 const apiUrl = import.meta.env.VITE_URL_API;
 const token = import.meta.env.VITE_TOKEN;
 
-function InvoiceList({ invoices }) {
+function InvoiceList() {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(false);
   const [pageCount, setPageCount] = useState(0);
-  const [filters, setFilters] = useState({});
-  const [loadingPdf, setLoadingPdf] = useState(null); // Estado para el loader del PDF
-  const [loadingQr, setLoadingQr] = useState(null); // Estado para el loader del QR
+  const [loadingPdf, setLoadingPdf] = useState(null);
+  const [loadingQr, setLoadingQr] = useState(null);
 
   const handleViewPdf = async (invoiceNumber) => {
     try {
-      setLoadingPdf(invoiceNumber); // Activar loader para el PDF
+      setLoadingPdf(invoiceNumber);
       const response = await fetch(
         `${apiUrl}/v1/bills/download-pdf/${invoiceNumber}`,
         {
@@ -48,13 +47,13 @@ function InvoiceList({ invoices }) {
       console.error("Error:", error);
       alert("Hubo un error al descargar el PDF");
     } finally {
-      setLoadingPdf(null); // Desactivar loader para el PDF
+      setLoadingPdf(null);
     }
   };
 
   const handleViewQr = async (invoiceNumber) => {
     try {
-      setLoadingQr(invoiceNumber); // Activar loader para el QR
+      setLoadingQr(invoiceNumber);
       const response = await fetch(
         `${apiUrl}/v1/bills/show/${invoiceNumber}`,
         {
@@ -69,25 +68,23 @@ function InvoiceList({ invoices }) {
       }
 
       const data = await response.json();
-      const qrUrl = data.data.bill.qr; 
+      const qrUrl = data.data.bill.qr;
 
       window.open(qrUrl, "_blank");
     } catch (error) {
       console.error("Error:", error);
       alert("Hubo un error al obtener el QR");
     } finally {
-      setLoadingQr(null); // Desactivar loader para el QR
+      setLoadingQr(null);
     }
   };
 
-  // Columnas de la tabla
   const columns = useMemo(
     () => [
       { Header: "Número", accessor: "number" },
       { Header: "Cliente", accessor: "names" },
       { Header: "Identificación", accessor: "identification" },
       { Header: "Total", accessor: "total" },
-      // { Header: "Estado", accessor: "status" },
       { Header: "Fecha", accessor: "created_at" },
       {
         Header: "Acciones",
@@ -99,7 +96,7 @@ function InvoiceList({ invoices }) {
               className="text-blue-500 hover:text-blue-700"
               disabled={loadingPdf === row.original.number}
             >
-              {loadingPdf === row.original.number ? ( 
+              {loadingPdf === row.original.number ? (
                 <Loader />
               ) : (
                 <FaEye size={20} />
@@ -108,9 +105,9 @@ function InvoiceList({ invoices }) {
             <button
               onClick={() => handleViewQr(row.original.number)}
               className="text-green-500 hover:text-green-700"
-              disabled={loadingQr === row.original.number} 
+              disabled={loadingQr === row.original.number}
             >
-              {loadingQr === row.original.number ? ( 
+              {loadingQr === row.original.number ? (
                 <Loader />
               ) : (
                 <FaQrcode size={20} />
@@ -120,7 +117,7 @@ function InvoiceList({ invoices }) {
         ),
       },
     ],
-    [loadingPdf, loadingQr] // Dependencias de los estados de carga
+    [loadingPdf, loadingQr]
   );
 
   const {
@@ -132,12 +129,12 @@ function InvoiceList({ invoices }) {
     canPreviousPage,
     canNextPage,
     pageOptions,
-    pageCount: tablePageCount,
     gotoPage,
     nextPage,
     previousPage,
     setPageSize,
-    state: { pageIndex, pageSize },
+    state: { pageIndex, pageSize, globalFilter },
+    setGlobalFilter,
   } = useTable(
     {
       columns,
@@ -146,26 +143,35 @@ function InvoiceList({ invoices }) {
       manualPagination: true,
       pageCount,
     },
-    useFilters,
+    useGlobalFilter,
     usePagination
   );
 
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
-      const result = await fetchInvoices(pageIndex + 1, filters);
+      const result = await fetchInvoices(pageIndex + 1, pageSize);
       setData(result.data);
       setPageCount(result.pagination.last_page);
       setLoading(false);
     };
 
     fetchData();
-  }, [pageIndex, filters]);
+  }, [pageIndex, pageSize]);
 
   return (
     <div className="p-4">
+      <div className="mb-4">
+        <input
+          type="text"
+          value={globalFilter || ""}
+          onChange={(e) => setGlobalFilter(e.target.value)}
+          placeholder="Buscar..."
+          className="px-4 py-2 border border-gray-300 rounded-md"
+        />
+      </div>
       {loading ? (
-        <Loader /> 
+        <Loader />
       ) : (
         <>
           <div className="overflow-x-auto">
@@ -175,11 +181,12 @@ function InvoiceList({ invoices }) {
             >
               <thead>
                 {headerGroups.map((headerGroup) => (
-                  <tr {...headerGroup.getHeaderGroupProps()}>
+                  <tr {...headerGroup.getHeaderGroupProps()} key={headerGroup.id}>
                     {headerGroup.headers.map((column) => (
                       <th
                         {...column.getHeaderProps()}
                         className="px-4 py-2 text-sm font-semibold text-left text-gray-700 bg-gray-100 border-b border-gray-200"
+                        key={column.id}
                       >
                         {column.render("Header")}
                       </th>
@@ -191,11 +198,12 @@ function InvoiceList({ invoices }) {
                 {page.map((row) => {
                   prepareRow(row);
                   return (
-                    <tr {...row.getRowProps()} className="hover:bg-gray-50">
+                    <tr {...row.getRowProps()} className="hover:bg-gray-50" key={row.id}>
                       {row.cells.map((cell) => (
                         <td
                           {...cell.getCellProps()}
                           className="px-4 py-2 text-sm text-gray-700 border-b border-gray-200"
+                          key={cell.column.id}
                         >
                           {cell.render("Cell")}
                         </td>
