@@ -1,18 +1,16 @@
 import  { useState } from 'react';
 import { useToken } from '../../tokenContext';
-import { login, refreshToken } from '../../Services/authService'; // Importa la función login
+import { login, refreshToken } from '../../Services/authService'; 
 import { FaSyncAlt } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
 
 const RefreshTokenPage = () => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const tokenContext = useToken(); // Obtén el token del contexto
+    const tokenContext = useToken(); 
     const token = tokenContext?.token;
     const updateToken = tokenContext?.updateToken;
     const navigate = useNavigate();
-
-    // Función para manejar el inicio de sesión o refresco del token
     const handleAuthentication = async () => {
         setLoading(true);
         setError(null);
@@ -20,19 +18,15 @@ const RefreshTokenPage = () => {
         try {
             let data;
             if (!token) {
-                // Si no hay token, inicia sesión
                 data = await login();
             } else {
-                // Si hay token, intenta refrescarlo
                 data = await refreshToken();
             }
 
-            // Actualiza el token en el contexto y en localStorage
             updateToken && updateToken(data.access_token);
             localStorage.setItem('token', data.access_token);
             localStorage.setItem('refresh_token', data.refresh_token);
 
-            // Redirige al usuario a la página principal
             navigate('/');
         } catch (error) {
             setError(

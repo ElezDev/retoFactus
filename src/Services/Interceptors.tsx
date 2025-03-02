@@ -16,21 +16,17 @@ api.interceptors.response.use(
     (response) => response,
     async (error) => {
         const originalRequest = error.config;
-
-        // Verifica si el error es debido a un token expirado (401) y si no se ha intentado refrescar antes
         if (error.response.status === 401 && !originalRequest._retry) {
             originalRequest._retry = true;
 
             try {
-                // Intenta refrescar el token
                 const newToken = await refreshAccessToken();
                 localStorage.setItem('token', newToken);
                 originalRequest.headers.Authorization = `Bearer ${newToken}`;
-                return api(originalRequest); // Reintenta la solicitud original con el nuevo token
+                return api(originalRequest); 
             } catch (refreshError) {
                 console.error('Error refreshing token:', refreshError);
-                // Si el refresh también falla, redirige al usuario a la página de login
-                window.location.href = '/login';
+                window.location.href = '/refresh-token';
                 return Promise.reject(refreshError);
             }
         }
