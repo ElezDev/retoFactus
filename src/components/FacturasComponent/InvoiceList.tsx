@@ -164,7 +164,6 @@ function InvoiceList({ invoices }) {
 
   return (
     <div className="p-4">
-      <h2 className="mb-4 text-2xl font-bold">Listado de Facturas</h2>
       {loading ? (
         <Loader /> 
       ) : (
