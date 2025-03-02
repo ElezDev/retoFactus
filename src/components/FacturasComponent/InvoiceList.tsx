@@ -1,82 +1,90 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { useTable, usePagination, useGlobalFilter } from "react-table";
 import { FaEye, FaQrcode } from "react-icons/fa";
-import { fetchInvoices } from "../../Services/api";
 import Loader from "../utils/Loader";
-
-const apiUrl = import.meta.env.VITE_URL_API;
-const token = import.meta.env.VITE_TOKEN;
+import api from "../../Services/Interceptors";
+import { useToken } from "../../tokenContext";
 
 function InvoiceList() {
+    const { token } = useToken() as { token: string };
+  
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(false);
   const [pageCount, setPageCount] = useState(0);
   const [loadingPdf, setLoadingPdf] = useState(null);
   const [loadingQr, setLoadingQr] = useState(null);
 
-  const handleViewPdf = async (invoiceNumber) => {
+  const handleViewPdf = async (invoiceNumber:any) => {
     try {
-      setLoadingPdf(invoiceNumber);
-      const response = await fetch(
-        `${apiUrl}/v1/bills/download-pdf/${invoiceNumber}`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
+        setLoadingPdf(invoiceNumber);
+        const response = await api.get(`/v1/bills/download-pdf/${invoiceNumber}`, {
+            headers: {
+                Authorization: `Bearer ${token}`,
+                "Content-Type": "application/json",
+            },
+            responseType: "json", 
+        });
+
+        if (response.status !== 200) {
+            throw new Error("Error al descargar el PDF");
         }
-      );
-      if (!response.ok) {
-        throw new Error("Error al descargar el PDF");
-      }
 
-      const data = await response.json();
-      const pdfData = data.data.pdf_base_64_encoded;
+        const pdfData = response.data.data.pdf_base_64_encoded;
 
-      const byteCharacters = atob(pdfData);
-      const byteNumbers = new Array(byteCharacters.length);
-      for (let i = 0; i < byteCharacters.length; i++) {
-        byteNumbers[i] = byteCharacters.charCodeAt(i);
-      }
-      const byteArray = new Uint8Array(byteNumbers);
-      const blob = new Blob([byteArray], { type: "application/pdf" });
+        const byteCharacters = atob(pdfData);
+        const byteNumbers = new Array(byteCharacters.length);
+        for (let i = 0; i < byteCharacters.length; i++) {
+            byteNumbers[i] = byteCharacters.charCodeAt(i);
+        }
+        const byteArray = new Uint8Array(byteNumbers);
+        const blob = new Blob([byteArray], { type: "application/pdf" });
 
-      const url = window.URL.createObjectURL(blob);
-      window.open(url, "_blank");
+        const url = window.URL.createObjectURL(blob);
+        window.open(url, "_blank");
     } catch (error) {
-      console.error("Error:", error);
-      alert("Hubo un error al descargar el PDF");
+        console.error("Error:", error);
+        alert("Hubo un error al descargar el PDF");
     } finally {
-      setLoadingPdf(null);
+        setLoadingPdf(null);
     }
-  };
+};
 
-  const handleViewQr = async (invoiceNumber) => {
-    try {
+const handleViewQr = async (invoiceNumber:any) => {
+  try {
       setLoadingQr(invoiceNumber);
-      const response = await fetch(
-        `${apiUrl}/v1/bills/show/${invoiceNumber}`,
-        {
+      const response = await api.get(`/v1/bills/show/${invoiceNumber}`, {
           headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
           },
-        }
-      );
-      if (!response.ok) {
-        throw new Error("Error al obtener los detalles de la factura");
+      });
+
+      if (response.status !== 200) {
+          throw new Error("Error al obtener los detalles de la factura");
       }
 
-      const data = await response.json();
-      const qrUrl = data.data.bill.qr;
-
+      const qrUrl = response.data.data.bill.qr;
       window.open(qrUrl, "_blank");
-    } catch (error) {
+  } catch (error) {
       console.error("Error:", error);
       alert("Hubo un error al obtener el QR");
-    } finally {
+  } finally {
       setLoadingQr(null);
-    }
+  }
+};
+  const fetchInvoices = async (page = 1, filters = {}) => {
+    const params = {
+      page,
+      ...filters,
+    };  
+    const response = await api.get(`/v1/bills`, {
+       params,
+       headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      });
+    return response.data.data;
   };
 
   const columns = useMemo(
@@ -147,6 +155,12 @@ function InvoiceList() {
     usePagination
   );
 
+   useEffect(() => {
+      if (!token) {
+          window.location.href = '/refresh-token';
+      }
+  }, [token]);
+
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
@@ -158,6 +172,8 @@ function InvoiceList() {
 
     fetchData();
   }, [pageIndex, pageSize]);
+
+  
 
   return (
     <div className="p-4">

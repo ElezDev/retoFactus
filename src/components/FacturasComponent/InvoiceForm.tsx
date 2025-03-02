@@ -4,8 +4,12 @@ import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { FaSearch, FaPlus, FaTrash, FaFilePdf, FaSpinner } from 'react-icons/fa';
 import { productsData } from './Data/data';
+import api from '../../Services/Interceptors';
+import { useToken } from '../../tokenContext';
 
 function InvoiceForm() {
+  const { token } = useToken() as { token: string };
+
   const [products, setProducts] = useState(productsData);
   const [selectedProducts, setSelectedProducts] = useState<any[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -40,9 +44,11 @@ function InvoiceForm() {
   const [municipalities, setMunicipalities] = useState<{ id: number; name: string; department: string }[]>([]);
   const [numberingRanges, setNumberingRanges] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const apiUrl = import.meta.env.VITE_URL_API;
-  const token = import.meta.env.VITE_TOKEN;
-
+  useEffect(() => {
+    if (!token) {
+        window.location.href = '/refresh-token';
+    }
+}, [token]);
   useEffect(() => {
     fetchMunicipalities();
     fetchNumberingRanges();
@@ -50,10 +56,10 @@ function InvoiceForm() {
 
   const fetchMunicipalities = async (name = '') => {
     try {
-      const response = await axios.get(`${apiUrl}/v1/municipalities?name=${name}`, {
+      const response = await api.get(`/v1/municipalities?name=${name}`, {
         headers: {
-          Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
         },
       });
       setMunicipalities(response.data.data);
@@ -65,10 +71,10 @@ function InvoiceForm() {
 
   const fetchNumberingRanges = async () => {
     try {
-      const response = await axios.get(`${apiUrl}/v1/numbering-ranges`, {
+      const response = await api.get(`/v1/numbering-ranges`, {
         headers: {
-          Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
         },
       });
       setNumberingRanges(response.data.data);
@@ -149,7 +155,6 @@ function InvoiceForm() {
   };
 
   const generateInvoice = async () => {
-    // Validar campos obligatorios
     if (!validateFields()) return;
 
     setIsLoading(true);
@@ -177,10 +182,10 @@ function InvoiceForm() {
     };
 
     try {
-      const response = await axios.post(`${apiUrl}/v1/bills/validate`, invoiceData, {
+      const response = await api.post(`/v1/bills/validate`, invoiceData, {
         headers: {
-          Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
         },
       });
       console.log('Respuesta del servidor:', response.data);
