@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useTable, usePagination, useGlobalFilter } from "react-table";
 import { FaEye, FaQrcode } from "react-icons/fa";
 import Loader from "../utils/Loader";
@@ -97,7 +97,7 @@ const handleViewQr = async (invoiceNumber:any) => {
       {
         Header: "Acciones",
         accessor: "actions",
-        Cell: ({ row }) => (
+        Cell: ({ row }: { row: any }) => (
           <div className="flex space-x-2">
             <button
               onClick={() => handleViewPdf(row.original.number)}
@@ -133,14 +133,13 @@ const handleViewQr = async (invoiceNumber:any) => {
     getTableBodyProps,
     headerGroups,
     prepareRow,
-    page,
-    canPreviousPage,
     canNextPage,
     pageOptions,
-    gotoPage,
     nextPage,
     previousPage,
+    page,
     setPageSize,
+    canPreviousPage,
     state: { pageIndex, pageSize, globalFilter },
     setGlobalFilter,
   } = useTable(
@@ -211,11 +210,11 @@ const handleViewQr = async (invoiceNumber:any) => {
                 ))}
               </thead>
               <tbody {...getTableBodyProps()}>
-                {page.map((row) => {
+                {page.map((row:any) => {
                   prepareRow(row);
                   return (
                     <tr {...row.getRowProps()} className="hover:bg-gray-50" key={row.id}>
-                      {row.cells.map((cell) => (
+                      {row.cells.map((cell:any) => (
                         <td
                           {...cell.getCellProps()}
                           className="px-4 py-2 text-sm text-gray-700 border-b border-gray-200"

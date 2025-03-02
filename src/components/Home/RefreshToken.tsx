@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import  { useState } from 'react';
 import { useToken } from '../../tokenContext';
 import { login, refreshToken } from '../../Services/authService'; // Importa la función login
 import { FaSyncAlt } from 'react-icons/fa';
@@ -7,7 +7,9 @@ import { useNavigate } from 'react-router-dom';
 const RefreshTokenPage = () => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const { token, updateToken } = useToken(); // Obtén el token del contexto
+    const tokenContext = useToken(); // Obtén el token del contexto
+    const token = tokenContext?.token;
+    const updateToken = tokenContext?.updateToken;
     const navigate = useNavigate();
 
     // Función para manejar el inicio de sesión o refresco del token
@@ -26,7 +28,7 @@ const RefreshTokenPage = () => {
             }
 
             // Actualiza el token en el contexto y en localStorage
-            updateToken(data.access_token);
+            updateToken && updateToken(data.access_token);
             localStorage.setItem('token', data.access_token);
             localStorage.setItem('refresh_token', data.refresh_token);
 

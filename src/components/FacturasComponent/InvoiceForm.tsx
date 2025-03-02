@@ -1,5 +1,4 @@
-import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import { useState, useEffect } from 'react';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { FaSearch, FaPlus, FaTrash, FaFilePdf, FaSpinner } from 'react-icons/fa';
@@ -10,7 +9,7 @@ import { useToken } from '../../tokenContext';
 function InvoiceForm() {
   const { token } = useToken() as { token: string };
 
-  const [products, setProducts] = useState(productsData);
+  const [products] = useState(productsData);
   const [selectedProducts, setSelectedProducts] = useState<any[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [customer, setCustomer] = useState({

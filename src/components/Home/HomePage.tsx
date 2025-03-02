@@ -1,4 +1,3 @@
-import React from 'react';
 import InvoiceForm from '../FacturasComponent/InvoiceForm';
 
 function HomePage() {
