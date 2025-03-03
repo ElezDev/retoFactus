@@ -28,7 +28,7 @@ function InvoiceForm() {
   });
   const [invoice, setInvoice] = useState({
     numbering_range_id: "8",
-    reference_code: "elezdev-004",
+    reference_code: "",
     observation: "",
     payment_form: "1",
     payment_due_date: "2024-12-30",
